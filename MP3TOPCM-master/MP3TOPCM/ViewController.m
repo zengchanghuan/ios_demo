@@ -145,10 +145,10 @@
     format.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked;
     
     
-    self.player = [[AVAudioPlayer alloc] initWithPcmData:pcmData pcmFormat:format error:&error];
-    self.player.numberOfLoops = 1;
-    NSLog(@"pcmData = %p",pcmData);
-    [self.player play];
+//    self.player = [[AVAudioPlayer alloc] initWithPcmData:pcmData pcmFormat:format error:&error];
+//    self.player.numberOfLoops = 1;
+//    NSLog(@"pcmData = %p",pcmData);
+//    [self.player play];
     
 #warning mark ---- method 2
 //    NSError *error = nil;

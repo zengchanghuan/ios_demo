@@ -7,6 +7,8 @@
  */
 
 #import "AudioFileConvertOperation.h"
+#import "ESCAudioStreamPlayer.h"
+
 @import Darwin;
 @import AVFoundation;
 
@@ -88,6 +90,8 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
 
 @property (nonatomic, assign) AudioConverterState state;
 
+@property(nonatomic, strong) ESCAudioStreamPlayer *streamPlayer;
+
 @end
 
 @implementation AudioFileConvertOperation
@@ -107,6 +111,10 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
         _semaphore = dispatch_semaphore_create(0);
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruptionNotification:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
+        
+
+        self.streamPlayer = [[ESCAudioStreamPlayer alloc] initWithSampleRate:8000 formatID:kAudioFormatLinearPCM formatFlags:kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked channelsPerFrame:2 bitsPerChannel:16 framesPerPacket:1];
+
     }
     
     return self;
@@ -365,6 +373,8 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
             NSLog(@"rawData = %p",rawData);
             [self getPCMDB:rawData];
             [self isQuite:rawData];
+            
+            [self.streamPlayer play:rawData];
         }
         
         BOOL wasInterrupted = [self checkIfPausedDueToInterruption];
