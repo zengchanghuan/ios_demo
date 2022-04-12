@@ -81,8 +81,9 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
 };
 
 @interface AudioFileConvertOperation ()
+{
 
-// MARK: Properties
+}
 
 @property (nonatomic, strong) dispatch_queue_t queue;
 
@@ -114,6 +115,9 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
         
 
         self.streamPlayer = [[ESCAudioStreamPlayer alloc] initWithSampleRate:8000 formatID:kAudioFormatLinearPCM formatFlags:kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked channelsPerFrame:2 bitsPerChannel:16 framesPerPacket:1];
+
+
+        
 
     }
     
@@ -331,8 +335,14 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
         size = sizeof(outputSizePerPacket);
         
         if (![self checkError:AudioConverterGetProperty(converter, kAudioConverterPropertyMaximumOutputPacketSize, &size, &outputSizePerPacket) withErrorString:@"AudioConverterGetProperty kAudioConverterPropertyMaximumOutputPacketSize failed!"]) {
-            if (afio.srcBuffer) { free(afio.srcBuffer); }
-            if (outputBuffer) { free(outputBuffer); }
+            if (afio.srcBuffer){
+                free(afio.srcBuffer);
+                
+            }
+            if (outputBuffer) {
+                free(outputBuffer);
+                
+            }
             
             return;
         }
@@ -342,6 +352,7 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
     }
     
     UInt32 numberOutputPackets = theOutputBufferSize / outputSizePerPacket;
+    NSLog(@"numberOutputPackets = %u",(unsigned int)numberOutputPackets);
     
     // If the destination format has a cookie, get it and set it on the output file.
     [self writeCookieForAudioFile:destinationFileID converter:converter];
@@ -357,6 +368,8 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
     
     // Loop to convert data.
     printf("Converting...\n");
+    
+
     while (YES) {
         
         // Set up output buffer list.
@@ -370,11 +383,12 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
         //如果获取到数据
         if (fillBufferList.mBuffers[0].mDataByteSize > 0) {
             NSData *rawData = [NSData dataWithBytes:fillBufferList.mBuffers[0].mData length:fillBufferList.mBuffers[0].mDataByteSize];
-            NSLog(@"rawData = %p",rawData);
+//            NSLog(@"rawData = %p",rawData);
             [self getPCMDB:rawData];
-            [self isQuite:rawData];
             
+            //播放pcm音频流数据
             [self.streamPlayer play:rawData];
+            
         }
         
         BOOL wasInterrupted = [self checkIfPausedDueToInterruption];
@@ -390,7 +404,8 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
         UInt32 ioOutputDataPackets = numberOutputPackets;
         printf("AudioConverterFillComplexBuffer...\n");
         error = AudioConverterFillComplexBuffer(converter, EncoderDataProc, &afio, &ioOutputDataPackets, &fillBufferList, outputPacketDescriptions);
-        
+        NSLog(@"ioOutputDataPackets = %d",ioOutputDataPackets);
+
         // if interrupted in the process of the conversion call, we must handle the error appropriately
         if (error) {
             if (error == kAudioConverterErr_HardwareInUse) {
@@ -735,39 +750,11 @@ typedef NS_ENUM(NSInteger, AudioConverterState) {
     {
         db = (int)(20.0*log10(sum));
     }
+    if (db < 0) {
+        db = 1;
+    }
     NSLog(@"音量大小 = %d",db);
     return db;
-}
-
--(BOOL)isQuite:(NSData *)pcmData
-{
-    if (pcmData == nil)
-    {
-        return NO;
-    }
-    
-    long long pcmAllLenght = 0;
-    
-    short butterByte[pcmData.length/2];
-    memcpy(butterByte, pcmData.bytes, pcmData.length);//frame_size * sizeof(short)
-    
-    // 将 buffer 内容取出，进行平方和运算
-    for (int i = 0; i < pcmData.length/2; i++)
-    {
-        pcmAllLenght += butterByte[i] * butterByte[i];
-    }
-    // 平方和除以数据总长度，获得音量大小。
-    int mean = pcmAllLenght / (double)pcmData.length;
-    int volume =10*log10(mean);//volume为分贝数大小
-    
-    NSLog(@"volume = %d",volume);
-    if (volume >= 45) //45分贝
-    {
-        //在说话
-        
-    }
-    
-    return YES;
 }
 
 @end
